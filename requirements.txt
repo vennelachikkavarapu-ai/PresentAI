@@ -1,5 +1,6 @@
+
 streamlit
-av
+av<19
 numpy
 pandas
 faster-whisper

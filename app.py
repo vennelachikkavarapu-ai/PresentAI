@@ -21,6 +21,7 @@ st.set_page_config(
     layout="wide"
 )
 
+
 # =========================================================
 # INITIALIZE DATABASE AND SESSION STATE
 # =========================================================
@@ -75,8 +76,10 @@ def detect_speech_pauses(
             # Normalize integer audio to approximately -1 to 1.
             if np.issubdtype(original_samples.dtype, np.integer):
                 max_value = float(
-                    max(abs(np.iinfo(original_samples.dtype).min),
-                        np.iinfo(original_samples.dtype).max)
+                    max(
+                        abs(np.iinfo(original_samples.dtype).min),
+                        np.iinfo(original_samples.dtype).max
+                    )
                 )
                 samples = samples / max_value
 
@@ -199,7 +202,6 @@ def load_history_dataframe():
         if isinstance(history[0], dict):
             return pd.DataFrame(history)
 
-        # Support tuple rows returned from SQLite.
         expected_columns = [
             "id",
             "date",
@@ -218,6 +220,7 @@ def load_history_dataframe():
                 )
 
             without_id = expected_columns[1:]
+
             if len(history[0]) == len(without_id):
                 return pd.DataFrame(
                     history,
@@ -242,6 +245,7 @@ st.write(
 )
 
 st.divider()
+
 
 # =========================================================
 # SIDEBAR
@@ -379,7 +383,7 @@ if audio_file is not None:
 
                 score = max(0, min(100, score))
 
-                # Store results so they survive Streamlit reruns.
+                # Save results for Streamlit reruns.
                 st.session_state.analysis_result = {
                     "transcript": transcript,
                     "language": language,
@@ -397,6 +401,7 @@ if audio_file is not None:
                     "silence_threshold_db": silence_threshold_db
                 }
 
+                # Reset reports belonging to the previous transcript.
                 st.session_state.session_saved = False
 
                 st.success("Analysis completed successfully!")
@@ -414,7 +419,6 @@ else:
 
 # =========================================================
 # DISPLAY ANALYSIS RESULTS
-# This section is outside the Analyze button so results persist.
 # =========================================================
 data = st.session_state.analysis_result
 
@@ -514,7 +518,6 @@ if data is not None:
 
     # -----------------------------------------------------
     # SAVE PRACTICE SESSION
-    # Outside the Analyze button; this fixes the rerun issue.
     # -----------------------------------------------------
     st.divider()
     st.header("💾 Save Practice Session")
@@ -679,7 +682,7 @@ if data is not None:
         else "Continue practicing."
     )
 
-    report = f"""PresentAI - Presentation Analysis Report
+    full_report = f"""PresentAI - Presentation Analysis Report
 
 Detected Language: {language}
 Word Count: {word_count}
@@ -708,15 +711,15 @@ Improvement Suggestions:
 
     st.download_button(
         "📄 Download Full Analysis Report",
-        data=report,
+        data=full_report,
         file_name="presentai_report.txt",
-        mime="text/plain"
+        mime="text/plain",
+        key="download_full_report"
     )
 
 
 # =========================================================
 # PRACTICE HISTORY
-# Always displayed, even when no audio is uploaded.
 # =========================================================
 st.divider()
 st.header("📚 Practice History")
@@ -731,7 +734,6 @@ try:
         )
 
     else:
-        # Make sure required fields exist before displaying history.
         required_columns = [
             "date",
             "word_count",
@@ -753,7 +755,6 @@ try:
             )
 
         else:
-            # Normalize numbers for metrics and charts.
             for column in [
                 "word_count",
                 "speaking_speed",
@@ -773,10 +774,9 @@ try:
                 st.info(
                     "No valid practice scores are available in the database."
                 )
+
             else:
-                # SQLite history is usually newest first.
-                if "date" in history_df.columns:
-                    history_df["date"] = history_df["date"].astype(str)
+                history_df["date"] = history_df["date"].astype(str)
 
                 total_sessions = len(history_df)
                 average_score = history_df["practice_score"].mean()
@@ -852,7 +852,6 @@ try:
                         "Sessions are plotted from oldest to newest."
                     )
 
-                # Show the latest transcript if the database includes it.
                 if "transcript" in history_df.columns:
                     st.subheader("🔎 Latest Saved Session")
 
@@ -880,8 +879,8 @@ try:
 except Exception as error:
     st.error(f"Could not load practice history: {error}")
     st.caption(
-        "If this continues, check the get_history() function and "
-        "the table columns in database.py."
+        "If this continues, check get_history() and the table columns "
+        "in database.py."
     )
 
 
